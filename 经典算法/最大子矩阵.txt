@@ -1,0 +1,36 @@
+#include<stdio.h>
+#include<memory.h>
+int a[101][100],n,i,max,sum,j,x,k;
+int main()
+{
+ scanf("%d",&n);
+ max=-12701;
+ for (i=1;i<=n;i++)
+ {
+  if (i==1)
+   for (j=0;j<n;j++)
+   {
+    scanf("%d",&a[1][j]);
+    a[0][j]=0;
+   }
+   else 
+    for (j=0;j<n;j++)
+    {
+     scanf("%d",&x);
+     a[i][j]=a[i-1][j]+x;
+    }
+ }
+ for (i=1;i<=n;i++)
+  for (j=1;j<=i;j++)
+  {
+   sum=0;
+   for (k=0;k<n;k++)
+   {
+    sum+=(a[i][k]-a[j-1][k]);
+    if (sum>max) max=sum;
+    if (sum<0) sum=0;
+   }
+  }
+ printf("%d\n",max);
+ return 0;
+}

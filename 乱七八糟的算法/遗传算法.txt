@@ -1,0 +1,170 @@
+/*遗传算法*/
+/*
+     f(x)=max{x1^2+x2^2}
+	 x1,x2范围0~15
+*/
+
+/* */
+
+#include <iostream>
+#include <time.h>
+
+#define SIZE 10000 //种群规模
+#define GENERATION 1 //繁殖代数
+#define VARIATION 0.01 //变异概率
+#define CHANGE 0.8 //交叉互换的概率
+
+using namespace std;
+
+void GA()
+{
+
+	unsigned int population[SIZE] ;
+
+	/*随机生成初始种群*/
+	for(int i=0;i<SIZE;i++)
+	{
+		int nu1=rand()%16;
+		int nu2=(rand()%16)<<4;
+		population[i]= nu1+nu2;
+	}
+
+	/*循环*/
+	for(int time=0;time<GENERATION;time++)
+	{
+	double scoresum=0;
+	double score[SIZE]; //适应度评估
+	double pos[SIZE];  //每个个体相对适应度的位置
+
+		/*对种群进行适应度评估*/
+       for(int j=0;j<SIZE;j++)
+	   {          
+							//高位                                 //低位
+		   score[j]= (population[j]>>4)*(population[j]>>4) + (population[j] & 0xf)*(population[j] & 0xf);
+		//   score[j]= (population[j]>>4) + (population[j] & 0xf);
+		   scoresum+=score[j];
+	   }
+
+
+	   pos[0]=score[0]/scoresum;
+	   /*计算每个个体的相对适应度大小*/
+	   for(int j=1;j<SIZE;j++)
+	   {
+		   pos[j]=pos[j-1]+ score[j]/scoresum;
+	   }
+
+	   int newa[SIZE];
+
+       /*自然选择*/
+	   for(int j=0;j<SIZE;j++)
+	   {
+		   double k=rand()/(float)RAND_MAX;   //产生一个0~1的随机数
+		   int i=0;
+
+		   if(k<pos[0])
+		   {
+			   newa[j]=population[0];
+			   continue;
+		   }
+
+		   while(k>pos[i] && i<SIZE)
+		   {
+			   i++;
+		   }
+
+		   if(i==SIZE)
+		   {
+			   newa[j]=population[i-1];
+			   continue;
+		   }
+
+		   if(k!=0)
+		   newa[j]=population[i-1];
+		   else
+		   newa[j]=population[0];
+
+	   }
+
+			//淘汰原来的种群
+	   for(int i=0;i<SIZE ;i++)
+		   population[i]=newa[i];
+
+
+   /*染色体交叉互换*/
+
+			//1.随机配对  
+
+			//产生一个0~SIZE-1 的配对指导数组
+	   int a[SIZE];
+
+	   for(int i=0;i<SIZE;i++)
+		   a[i]=i;
+
+	   for(int i=0;i<1000;i++)
+	   {
+		  int swap1 = rand()%SIZE;
+		  int swap2 = rand()%SIZE;
+		  swap(a[swap1],a[swap2]);
+	   }
+
+			//开始配对 1和2 配对 ，3和4配对.....
+	   for(int i=0;i<SIZE ;i+=2)
+	   {
+
+		   if( rand()/(float)RAND_MAX < CHANGE)
+		   {
+		   int swappoint1=a[i],swappoint2=a[i+1];
+		   int tmp1=0;
+				//随机产生一个交叉互换的点
+		   int point =rand()%8;
+		   point-=1;
+		   tmp1 = ~((0xffffffff)<<point+1) &  population[swappoint1];
+		   population[swappoint1] = (~((0xffffffff)<<point+1) & population[swappoint2]) + ( population[swappoint1] & 0xffffffff<<point+1);
+		   population[swappoint2]= (population[swappoint2] & 0xffffffff<<point+1) + tmp1;
+		   }
+
+	   }
+
+			/*变异运算*/
+     for(int i=0;i<SIZE;i++)
+	 {
+		 float p= rand()/(float)RAND_MAX;
+
+		 if( p <= VARIATION)
+		 {
+			 int varpos= rand()%8;
+			 population[i] = (((~(((1<<varpos)&population[i])>>varpos)) & 1 )<<varpos) + (population[i]&(~(1<<varpos)) );
+		 }
+	 }
+	 
+	}
+	
+
+	/*筛选出最优势的个体*/
+	
+		/*对种群进行适应度评估*/
+	int score=0,scoremax=0,scoremaxpos=0;
+
+       for(int j=0;j<SIZE;j++)
+	   {
+		   score= (population[j]>>4)*(population[j]>>4) + (population[j] & 0xf)*(population[j] & 0xf);
+		   if(score>scoremax)
+		   {
+			   scoremax=score;
+			   scoremaxpos=j;
+		   }
+	   }
+
+	int num1=(population[scoremaxpos]>>4) ;
+	int num2=(population[scoremaxpos] & 0xf);
+	cout<<"the max sum is "<<num1<<"*"<<num1<<" + "<<num2<<"*"<<num2<<" = "<<num1*num1+num2*num2 <<endl;
+
+}
+
+int main()
+{
+	srand(time(0));
+
+	for(int i=0;i<100;i++)
+    GA();
+}

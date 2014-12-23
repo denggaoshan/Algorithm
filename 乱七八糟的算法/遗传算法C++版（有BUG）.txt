@@ -1,0 +1,274 @@
+#include <iostream>
+#include <string>
+#include <time.h>
+#include <vector>
+
+using namespace std;
+
+#define RAND_0_1 (rand()/(float)RAND_MAX)
+
+#define GENE_LEN 8   //基因的长度
+
+int BinaryChange(string s)
+{
+	int num=0;
+	for(int i=0;i<4;i++)
+	{
+		if(s[i]=='1')
+		{
+			num+=pow(2,3-i);
+		}
+	}
+
+	return num;
+}
+
+//生物
+class creature
+{
+public:
+
+	string gene;     //基因型
+	int genex1,genex2;
+	int score;       //适应度
+
+
+
+	//产生一个固定基因型的个体
+	creature(string getgene)
+	{
+		gene=getgene;
+
+		genex1=BinaryChange(gene.substr(0,4));
+		genex2=BinaryChange(gene.substr(4,7));
+
+		score=genex1*genex1+genex2*genex2;  //x1^2 + x2^2    
+
+	}
+
+	//产生新个体，基因随机
+	creature()
+	{
+		for(int i=0;i<GENE_LEN;i++)           //随机产生一串基因
+		{
+			gene+=RAND_0_1>0.5 ? '1':'0';    
+		}
+		 
+		genex1=BinaryChange(gene.substr(0,4));
+		genex2=BinaryChange(gene.substr(4,7));
+
+		score=genex1*genex1+genex2*genex2;           
+	}
+
+	/*基因突变*/
+	void Variation()
+	{
+		int varpos=rand()%GENE_LEN; //随机产生变异位置
+		gene[varpos]= gene[varpos]=='1'?'0':'1';
+
+		genex1=BinaryChange(gene.substr(0,4));
+		genex2=BinaryChange(gene.substr(4,7));
+
+		score=genex1*genex1+genex2*genex2; //x1^2 + x2^2   
+
+	}
+
+	string GetGene(){return gene;}
+	int GetScore(){return score;}
+};
+
+
+//世界
+class world 
+{
+protected:
+	vector<creature>  CreatureCircle;  //生物圈
+	int CreatureNumber;                //生物数目
+
+    const double VARIATIONPERCENT;         //变异率
+	const double SIREPERCENT;              //繁殖成功率
+	const int TIMES		   ;				   //演替的代数
+
+public:
+	/*构造函数*/
+	
+	world(int creaturecount,int times,int variationpercent,int sirepercent):VARIATIONPERCENT(variationpercent),SIREPERCENT(sirepercent),TIMES(times)
+	{
+		srand(time(0)); //初始化随机种子
+		CreatureNumber=0;
+		CreatureCircle.clear();
+
+		for(int i=0;i<creaturecount;i++)
+		{
+			creature add;
+			AddCreature(add);
+		}
+
+	}
+
+	/*两个生物发生交叉互换*/
+	int Change(creature one,creature two)
+	{
+		int pos=rand()%GENE_LEN;
+		
+		creature newone((one.GetGene()).substr(0,GENE_LEN - pos ) +(two.GetGene()).substr(GENE_LEN - pos,GENE_LEN));
+		creature newtwo((two.GetGene()).substr(0,GENE_LEN - pos ) +(one.GetGene()).substr(GENE_LEN - pos,GENE_LEN));
+
+		one = newone;
+		two = newtwo;
+
+		return pos;
+	}
+
+	/*添加生物*/
+	void AddCreature(const creature add)   
+	{
+		CreatureCircle.push_back(add);
+		CreatureNumber++;
+	}
+
+	/*筛选出当前世界的最优个体*/
+	int SelectBestCreature()
+	{
+		int scoremax=CreatureCircle[0].GetScore();
+		int scoremaxpos=0;
+
+		for(int i=0;i<this->CreatureNumber;i++)
+		{
+			if(scoremax < CreatureCircle[i].GetScore() )
+			{
+				scoremaxpos=i;
+				scoremax=CreatureCircle[i].GetScore();
+			}
+		}
+
+		creature best = CreatureCircle[scoremaxpos];
+	
+		cout<<best.genex1<<" * "<<best.genex1<<" + "<<best.genex2<<" * "<<best.genex2<<" = "<<best.genex1 * best.genex1 + best.genex2 * best.genex2;
+	    cout<<endl;
+		
+		return CreatureCircle[scoremaxpos].GetScore();
+	}
+
+	/*自然选择*/
+	void NatureSelect()    
+	{
+	    vector<double>   CreaturePos;     //自然选择的时候的位置
+		double scoresum=0;
+		
+		//计算适应度
+		for(int i=0;i<CreatureNumber;i++)
+		{
+			scoresum += CreatureCircle[i].GetScore();
+		}
+
+		CreaturePos.clear();
+
+		CreaturePos.push_back(CreatureCircle[0].GetScore()/scoresum);
+		//计算相对位置
+		for(int i=1;i<CreatureNumber;i++)
+		{
+			CreaturePos.push_back(CreaturePos[i-1] + CreatureCircle[i].GetScore() / scoresum );
+		}
+
+		vector<creature>  CreatureCircleTmp;  //生物圈
+
+		//开始自然选择
+		for(int i=0;i<CreatureNumber;i++)
+		{
+			double k=RAND_0_1;
+			int j=0;
+
+			while(k>CreaturePos[j] && j< this->CreatureNumber )
+			{
+			  j++;
+			}
+
+			if(j == this->CreatureNumber)
+			{
+				CreatureCircleTmp.push_back(CreatureCircle[this->CreatureNumber - 1]);
+			}
+			else
+			{
+				CreatureCircleTmp.push_back(CreatureCircle[j]);
+			}
+		}
+
+		 //新一代代替旧一代
+		CreatureCircle =CreatureCircleTmp;
+	}
+
+	/*进行一轮繁殖*/
+	void Sire()
+	{
+		vector<int> randcombine; //随机组合指导数组
+
+		for(int i=0;i<this->CreatureNumber;i++)  //按顺序初始化
+		{
+			randcombine.push_back(i);
+		}
+
+		for(int i=0;i<1000;i++)  //打乱顺序
+		{
+			int swap1=rand()%this->CreatureNumber;
+			int swap2=rand()%this->CreatureNumber;
+			swap(randcombine[swap1],randcombine[swap2]);
+		}
+
+		for(int i=0;i<this->CreatureNumber;i+=2)
+		{
+			if(RAND_0_1 <= SIREPERCENT)
+			{
+				continue;    //繁殖不成功
+			}
+			int sire1=randcombine[i];
+			int sire2=randcombine[i+1];
+			Change(CreatureCircle[sire1],CreatureCircle[sire2]);
+		}
+
+	}
+
+	/*变异*/
+	void Variation()
+	{
+		for(int i=0;i<this->CreatureNumber;i++)
+		{
+			if(RAND_0_1<VARIATIONPERCENT)
+			{
+				CreatureCircle[i].Variation();
+			}
+		}
+	}
+
+	/*进行一轮演替*/
+	void Evolution()
+	{
+		NatureSelect();  
+		Sire(); 
+		Variation();
+	}
+
+	/*运行*/
+	void Run()
+	{
+		for(int i=0;i<TIMES;i++)
+		{
+			Evolution();
+		}
+
+		this->SelectBestCreature();
+		}
+
+};
+
+
+int main()
+{
+	
+	for(int i=0;i<100;i++)
+	{
+	world MyWorld(100,1000,0.01,0.9);  //种群数 繁殖代数 突变率 繁殖率
+	MyWorld.Run();
+	}
+
+}

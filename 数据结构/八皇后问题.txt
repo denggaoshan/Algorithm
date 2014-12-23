@@ -1,0 +1,102 @@
+/*八皇后问题*/
+#include "stdio.h"
+
+#define ROW 8
+#define COL 8
+#define YES 1
+#define NO 2
+
+	int count=0;
+int cheese[ROW][COL];
+
+/*判断该位置是否安全，是返回YES，否返回NO */
+int IfSafe(int x,int y,int (*cheese)[COL])
+{
+	int i,j;
+
+	/*这里为什么不判断行呢？*/
+	//列
+	for(i=0;i<ROW;i++)
+	{
+		if(cheese[i][y]==1)
+			return NO;
+	}
+
+	//右下
+	for(i=x,j=y;i<ROW&&j<COL ;i++,j++)
+	{
+		if(cheese[i][j]==1)
+			return NO;
+	}
+
+	//左上
+	for(i=x,j=y;i>=0&&j>=0;i--,j--)
+	{
+		if(cheese[i][j]==1)
+			return NO;
+	}
+
+	//左下
+	for(i=x,j=y;i<ROW&&j>=0;i++,j--)
+	{
+		if(cheese[i][j]==1)
+			return NO;
+	}
+
+	//右上
+	for(i=x,j=y;i>=0&&j<COL;i--,j++)
+	{
+		if(cheese[i][j]==1)
+		 return NO;	
+	}
+		return YES;
+}
+
+int Queen(int x,int y,int (*cheese)[COL])
+{
+	int cheese2[ROW][COL];
+	int i,j;
+
+		if(x==ROW)
+		{
+			printf("第%d种\n",count+1);
+			for(i=0;i<ROW;i++)
+			{
+		        for(j=0;j<COL;j++)
+				{
+					printf("%d ",cheese[i][j]);
+			}
+			printf("\n");
+			}
+			getchar();
+			count++;
+		}
+
+	for(i=0;i<ROW;i++)
+		for(j=0;j<COL;j++)
+			cheese2[i][j]=cheese[i][j];
+
+     for(j=0;j<COL;j++)
+	 {
+		 if(IfSafe(x,j,cheese2)==YES)
+		 {
+			 for( i=0; i < COL; i++ )
+				{
+					cheese2[x][i] = 0;
+				}	
+			 cheese2[x][j]=1;
+			 Queen(x+1,y,cheese2);
+		 }
+	 }
+	return 1;
+
+}
+
+
+int main()
+{
+	int cheese[ROW][COL]={0};
+	Queen(0,0,cheese);
+	return 0;
+}
+
